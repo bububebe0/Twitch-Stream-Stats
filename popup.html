@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Twitch Stats</title>
+<link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+<div class="hdr">
+  <span class="hdr-title">Twitch Stats</span>
+  <div class="hdr-status">
+    <div class="dot" id="liveDot"></div>
+    <span id="liveLabel">—</span>
+  </div>
+</div>
+<div class="search-row">
+  <input class="search-input" id="channelInput" type="text" placeholder="..." />
+  <button class="btn" id="watchBtn">—</button>
+  <button class="btn-toggle" id="toggleBtn" disabled>
+    <svg id="toggleIcon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    <span id="toggleLabel">—</span>
+  </button>
+  <button class="btn-ghost" id="refreshBtn">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+  </button>
+</div>
+<div class="tabs">
+  <button class="tab active" data-tab="stats" id="tab-stats">—</button>
+  <button class="tab" data-tab="chatters" id="tab-chatters">—</button>
+  <button class="tab" data-tab="history" id="tab-history">—</button>
+  <button class="tab" data-tab="settings" id="tab-settings">—</button>
+</div>
+<div class="panel active" id="panel-stats">
+  <div id="statsContent">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+</div>
+<div class="panel" id="panel-chatters">
+  <div id="chattersContent">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+</div>
+<div class="panel" id="panel-history">
+  <div id="historyContent">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+</div>
+<div class="panel" id="panel-settings">
+  <div class="setting-row">
+    <div>
+      <div class="setting-label" id="s-interval-label">—</div>
+      <div class="setting-sub" id="s-interval-sub">—</div>
+    </div>
+    <div class="setting-control">
+      <input class="num-input" id="intervalInput" type="number" min="0.5" max="1440" step="0.5" value="5" />
+      <span class="unit-label" id="s-unit-min">—</span>
+    </div>
+  </div>
+  <div class="setting-row">
+    <div>
+      <div class="setting-label" id="s-presets-label">—</div>
+      <div class="setting-sub" id="s-presets-sub">—</div>
+    </div>
+    <div class="setting-control" style="gap:4px; flex-wrap: wrap; justify-content: flex-end;">
+      <button class="btn-ghost preset-btn" data-val="1" id="preset-1">—</button>
+      <button class="btn-ghost preset-btn" data-val="5" id="preset-5">—</button>
+      <button class="btn-ghost preset-btn" data-val="15" id="preset-15">—</button>
+      <button class="btn-ghost preset-btn" data-val="60" id="preset-60">—</button>
+    </div>
+  </div>
+  <div class="setting-row">
+    <div>
+      <div class="setting-label" id="s-clear-label">—</div>
+      <div class="setting-sub" id="s-clear-sub">—</div>
+    </div>
+    <button class="btn-ghost" id="clearHistoryBtn" style="color:#e74c3c">—</button>
+  </div>
+  <div class="setting-row">
+    <div>
+      <div class="setting-label" id="s-export-label">—</div>
+      <div class="setting-sub" id="s-export-sub">—</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn-ghost" id="exportBtn">JSON</button>
+      <button class="btn-ghost" id="exportHtmlBtn" style="color:var(--accent)" id="s-export-html">—</button>
+    </div>
+  </div>
+  
+  <div class="setting-row">
+    <div>
+      <div class="setting-label" id="s-lang-label">—</div>
+      <div class="setting-sub" id="s-lang-sub">—</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn-ghost lang-btn" id="langRuBtn" data-lang="ru">RU</button>
+      <button class="btn-ghost lang-btn" id="langEnBtn" data-lang="en">EN</button>
+    </div>
+  </div>
+  <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:8px;border-bottom:none;padding-bottom:0">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div class="setting-label" id="s-archive-label">—</div>
+        <div class="setting-sub" id="s-archive-sub">—</div>
+      </div>
+      <button class="btn-ghost" id="clearArchiveBtn" style="color:var(--red);font-size:11px;padding:5px 10px">—</button>
+    </div>
+    <div id="archiveContent">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <div style="padding-top: 10px; text-align:center; font-size:10px; color: var(--muted); font-family: 'JetBrains Mono', sans-serif;" id="s-api-note">—</div>
+</div>
+
+<script src="chart.umd.js"></script>
+<script src="i18n.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
