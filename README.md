@@ -93,7 +93,7 @@ twitch-stream-stats/
 ---
 
 ## 🚀 Установка
-
+### Из [Chrome Webstore](https://chromewebstore.google.com/detail/twitch-stream-stats/injdamhkihkkanaglblcokmhfnobkgie)
 ### Из исходников (Developer Mode)
 
 1. Клонируйте репозиторий:
