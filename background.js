@@ -126,11 +126,14 @@ function getChatStats() {
     }
   }
 
+  const uniqueAuthors = lastMessageTime.size;
+
   return {
-    list: list.slice(0, 100),
-    count: chatPresence.size,
+    list: list.length > 0 ? list.slice(0, 100) : [...lastMessageTime.keys()].slice(0, 100),
+    count: Math.max(chatPresence.size, uniqueAuthors),
     activeCount,
     silentCount,
+    uniqueAuthors,
     recentMessages: recentMessages.slice(-50)
   };
 }
@@ -262,7 +265,7 @@ async function collectStats(channelName) {
 
     const chattersCount = (typeof gqlChattersCount === 'number' && gqlChattersCount > 0)
       ? gqlChattersCount
-      : chat.count;
+      : (chat.count > 0 ? chat.count : (chat.uniqueAuthors || 0));
 
     return {
       timestamp: now,
@@ -355,14 +358,21 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === 'SET_CHANNEL') {
     const ch = msg.channel.toLowerCase();
 
-    chrome.storage.local.get(['parsingActive', 'channel'], ({ parsingActive, channel: stored }) => {
-      if (parsingActive && stored && stored !== ch) {
-
-        sendResponse({ ok: false, locked: true });
-        return;
+    chrome.storage.local.get(['parsingActive', 'pollInterval'], async ({ parsingActive, pollInterval }) => {
+      // Stop any active parsing for the old channel first
+      if (parsingActive) {
+        chrome.alarms.clear('pollStats');
+        if (ircWs) { try { ircWs.close(); } catch(_) {} ircWs = null; }
+        chatPresence = new Set();
+        recentMessages = [];
+        recentMsgKeys = new Set();
+        lastMessageTime = new Map();
       }
-      chrome.storage.local.set({ channel: ch, pollHistory: [], parsingActive: true });
+
+      await chrome.storage.local.set({ channel: ch, pollHistory: [], lastStats: null, parsingActive: true });
       ircConnect(ch);
+      const minutes = pollInterval || 5;
+      chrome.alarms.create('pollStats', { periodInMinutes: minutes });
       runPoll();
       sendResponse({ ok: true });
     });
@@ -446,7 +456,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       const gqlCount = lastStats?.chattersCount;
       const gqlFresh = lastStats?.timestamp && (Date.now() - lastStats.timestamp) < 10 * 60 * 1000;
       if (typeof gqlCount === 'number' && gqlCount > 0 && gqlFresh) {
+
         chat.count = gqlCount;
+      } else if (chat.count === 0 && chat.uniqueAuthors > 0) {
+
+        chat.count = chat.uniqueAuthors;
       }
       sendResponse({ chatters: chat, recentMessages });
     });
