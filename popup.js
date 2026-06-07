@@ -369,31 +369,19 @@ function renderHistory() {
 
 document.getElementById('watchBtn').addEventListener('click', () => {
   const channel = document.getElementById('channelInput').value.trim().toLowerCase();
-  if (!channel) return;
+  if (!channel || !/^\w{3,25}$/.test(channel)) {
+    const input = document.getElementById('channelInput');
+    input.style.borderColor = 'var(--red)';
+    setTimeout(() => { input.style.borderColor = ''; }, 2000);
+    return;
+  }
 
-  chrome.runtime.sendMessage({ type: 'GET_PARSING_STATE' }, res => {
-    const isRunning = res && res.parsingActive;
-    chrome.storage.local.get('channel', ({ channel: stored }) => {
-
-      if (isRunning && stored && stored !== channel) {
-        const input = document.getElementById('channelInput');
-        input.style.borderColor = 'var(--red)';
-        input.title = t('watchStopFirst');
-        input.placeholder = t('watchStopPlaceholder');
-        setTimeout(() => {
-          input.style.borderColor = '';
-          input.title = '';
-          input.placeholder = t('channelPlaceholder');
-        }, 2500);
-        return;
-      }
-      document.getElementById('statsContent').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-      chrome.runtime.sendMessage({ type: 'SET_CHANNEL', channel });
-      document.getElementById('toggleBtn').disabled = false;
-      applyToggleState(true);
-      setTimeout(loadData, 1500);
-    });
-  });
+  // Always allow switching channels — the old session is auto-saved by background.js
+  document.getElementById('statsContent').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  chrome.runtime.sendMessage({ type: 'SET_CHANNEL', channel });
+  document.getElementById('toggleBtn').disabled = false;
+  applyToggleState(true);
+  setTimeout(loadData, 1500);
 });
 
 document.getElementById('channelInput').addEventListener('keydown', e => {
@@ -519,9 +507,12 @@ async function exportHtmlReport(overrideChannel, overrideFileDateStr) {
     console.warn('Could not load local chart.umd.js, falling back to CDN', e);
   }
 
+  if (!chartJsSource) {
+    console.error('chart.umd.js not found locally — charts will not render in the report');
+  }
   const chartScriptTag = chartJsSource
     ? `<script>${chartJsSource}<\/script>`
-    : `<script src="https://unpkg.com/chart.js@4/dist/chart.umd.min.js"><\/script>`;
+    : `<!-- chart.umd.js not found: add it to the extension folder -->`;
 
   const channel = overrideChannel || currentStats?.channel || 'unknown';
   const displayName = currentStats?.displayName || channel;
@@ -1625,7 +1616,6 @@ function escHtmlStatic(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ---- Load data ----
 function loadData() {
   chrome.runtime.sendMessage({ type: 'GET_HISTORY' }, data => {
     if (!data) {
@@ -1657,10 +1647,8 @@ function loadData() {
   });
 }
 
-// ---- Live updates ----
 chrome.runtime.onMessage.addListener(msg => {
   if (msg.type === 'STATS_UPDATED') {
-    // Дедупликация: не добавляем, если запись с таким timestamp уже есть
     const alreadyExists = pollHistory.length > 0 &&
       pollHistory[pollHistory.length - 1].timestamp === msg.stats.timestamp;
     if (!alreadyExists) {
@@ -1865,7 +1853,6 @@ function exportSessionJson(session) {
 }
 
 async function exportSessionHtml(session) {
-  // Подменяем currentStats и pollHistory временно чтобы переиспользовать exportHtmlReport
   const _stats = currentStats;
   const _history = pollHistory;
   try {
